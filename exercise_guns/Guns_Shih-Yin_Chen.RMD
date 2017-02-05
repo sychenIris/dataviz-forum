@@ -1,0 +1,88 @@
+---
+title: "Hello World!"
+author: "Shih-Yin Chen"
+date: "February 4, 2017"
+tags: "guns"
+output: html_document
+---
+
+Datasource 2: Gun ownership survey data - Washington Post
+```{r}
+library(XML) #creating XML (and HTML) documents (including DTDs), both local and accessible via HTTP or FTP.
+library(dplyr)
+gun_ownership_url = "http://www.washingtonpost.com/wp-srv/health/interactives/guns/ownership.html"
+gun_ownership = readHTMLTable(gun_ownership_url, header = TRUE, which = 1)
+gun_ownership = gun_ownership[-1, ] #cut first row
+parse_num = function(x) as.numeric(sub(',', '', x))
+gun_ownership = select(gun_ownership, State = 1, Total = 2, Yes = 3,
+                       `Yes %` = 4, No =5, `No %` = 6) %>%
+                        mutate_each(funs(parse_num), -State)#select:rename variables, mutate data except state
+```
+
+
+Datasource 2: Gun ownership survey data - Washington Post
+```{r}
+gun_ownership = gun_ownership %>%
+    mutate(`Child access prevention` = grepl('\\*$', State), #find State with *
+           State  = sub('\\*$', '', State)) #replacement with '' in State Col.
+# Fix D.C. name
+gun_ownership[gun_ownership$State == 'The District', 'State'] = 'District of Columbia' 
+```
+
+Datasource 3: Deaths due to firearms by state - Kaiser Family Foundation
+```{r}
+# Website appears to block scraping, but allows downloading data.
+# gun_deaths_url = 'http://kff.org/other/state-indicator/firearms-death-rate-per-100000/'
+# gun_deaths = readHTMLTable(gun_deaths_url)
+# Instead, use the manually downloaded CSV output.
+setwd("/Users/Irischen/Documents/GitHub/dataviz-forum/exercise_guns/exercise")
+gun_death = read.csv("KFF_deaths_firearms.csv", skip = 3) %>%
+  select(State = 1, Deathsper10000 = 2)
+```
+
+Question 1:
+Does gun ownership correlate with firearm deaths in the U.S.?
+Does the pattern hold only in the aggregate or also by state?
+```{r}
+#cor(gun_ownership[, 2], gun_death[,], use = "complete.obs", method = "pearson")
+joined = merge(x=gun_death, y=gun_ownership, by="State")
+joined
+```
+
+
+Dataset 4: Gun-related deaths at the individual level (2012-2014)
+```{r}
+library(readr)#provide a fast and friendly way to read tabular data into R. 
+gun_inddeaths <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/guns-data/master/full_data.csv")
+gun_inddeaths <- gun_inddeaths[, 2:dim(gun_inddeaths)[2]]
+head(gun_inddeaths)
+```
+
+
+
+Datasoure1: Gunsales - NYTimes
+```{r}
+library(gunsales)
+```
+
+Question 2 :What is the pattern of gunsales over time?
+
+As we can see, the total amount of gunsales increased over time, and the gunsales raised especially in Washington D.C. In terms of the sales of types, the sales of handguns increased over time, and yet the sales of longguns decreased.
+```{r}
+gun_sales <- analysis()
+str(gun_sales[, 1:12])
+ggplot_gunsales(gun_sales)
+```
+
+
+
+Question 3:
+What are the individual level patterns of gun deaths? Are gun regulations (e.g. child access prevention laws) associated with lower gun death rates? How about suicides (especially by non-adults)?
+```{r}
+library(ggplot2)
+summary(gun_death)
+#ggplot(gun_inddeaths, aes(x = month, y = age)) + geom_point()
+accesslaw = gun_ownership %>%
+    mutate( grepl('\\True$', `Child access prevention`),
+           law_true = ) 
+```
